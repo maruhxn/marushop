@@ -7,7 +7,6 @@ const kakaoStrategyConfig = new KakaoStrategy(
     callbackURL: "/api/auth/kakao/callback",
   },
   async (accessToken, refreshToken, profile, done) => {
-    console.log(profile);
     try {
       const user = await prisma.user.upsert({
         where: {
@@ -23,7 +22,12 @@ const kakaoStrategyConfig = new KakaoStrategy(
         },
       });
 
-      done(null, user);
+      done(null, {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        isAdmin: user.isAdmin,
+      });
     } catch (err) {
       done(err);
     }

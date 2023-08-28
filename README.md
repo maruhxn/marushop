@@ -30,3 +30,5 @@ maruhxn <maruhan1016@gmail.com>
 - 스토리지: local storage
 - DB: local postgresql
 - Mail Service: AWS SES
+
+## 문제 해결 과정

@@ -17,7 +17,13 @@ const localStrategyConfig = new LocalStrategy(
 
       const isMatch = await bcrypt.compare(password, exUser.password);
 
-      if (isMatch) return done(null, exUser);
+      if (isMatch)
+        return done(null, {
+          id: exUser.id,
+          email: exUser.email,
+          username: exUser.username,
+          isAdmin: exUser.isAdmin,
+        });
 
       return done(null, false, { msg: "Invalid email or password." });
     } catch (err) {

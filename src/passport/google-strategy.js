@@ -23,7 +23,12 @@ const googleStrategyConfig = new GoogleStrategy(
           googleId: profile.id,
         },
       });
-      done(null, user);
+      done(null, {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        isAdmin: user.isAdmin,
+      });
     } catch (err) {
       done(err);
     }

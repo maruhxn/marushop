@@ -23,7 +23,7 @@ model User {
 model Category {
   id Int @id @default(autoincrement())
   title String
-  slug  String?
+  slug  String? @unique
 
   products Product[]
 }
@@ -31,11 +31,20 @@ model Category {
 model Product {
   id Int @id @default(autoincrement())
   title String
-  slug String?
+  slug String? @unique
   description String
   price Int
   image String?
 
   categoryId Int
   category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([title])
+}
+
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String
+  expiresAt   DateTime
 }
