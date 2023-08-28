@@ -2,16 +2,17 @@ import express from "express";
 import passport from "passport";
 import { login, logout, register } from "../controllers/auth.controller.js";
 import catchAsync from "../libs/catch-async.js";
+import { isLoggedIn, isNotLoggedIn } from "../middlewares/auth.guard.js";
 
 const authRouter = express.Router();
 
-authRouter.post("/login", catchAsync(login));
+authRouter.post("/login", isNotLoggedIn, catchAsync(login));
 
-authRouter.post("/logout", catchAsync(logout));
+authRouter.post("/logout", isLoggedIn, catchAsync(logout));
 
-authRouter.post("/register", catchAsync(register));
+authRouter.post("/register", isNotLoggedIn, catchAsync(register));
 
-authRouter.get("/google", passport.authenticate("google"));
+authRouter.get("/google", isNotLoggedIn, passport.authenticate("google"));
 
 authRouter.get(
   "/google/callback",
@@ -21,7 +22,7 @@ authRouter.get(
   })
 );
 
-authRouter.get("/kakao", passport.authenticate("kakao"));
+authRouter.get("/kakao", isNotLoggedIn, passport.authenticate("kakao"));
 
 authRouter.get(
   "/kakao/callback",

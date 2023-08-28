@@ -19,6 +19,8 @@ const kakaoStrategyConfig = new KakaoStrategy(
           email: profile._json.kakao_account.email,
           username: profile.displayName,
           kakaoId: profile.id + "",
+          isAdmin:
+            profile._json.kakao_account.email === process.env.ADMIN_EMAIL,
         },
       });
 

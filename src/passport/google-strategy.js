@@ -21,6 +21,7 @@ const googleStrategyConfig = new GoogleStrategy(
           email: profile.emails[0].value,
           username: profile.displayName,
           googleId: profile.id,
+          isAdmin: profile.emails[0].value === process.env.ADMIN_EMAIL,
         },
       });
       done(null, user);

@@ -44,6 +44,7 @@ export const register = async (req, res, next) => {
       email,
       password: await bcrypt.hash(password, salt),
       username,
+      isAdmin: email === process.env.ADMIN_EMAIL,
     },
   });
 
