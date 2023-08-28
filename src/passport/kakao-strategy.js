@@ -22,12 +22,7 @@ const kakaoStrategyConfig = new KakaoStrategy(
         },
       });
 
-      done(null, {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        isAdmin: user.isAdmin,
-      });
+      done(null, user);
     } catch (err) {
       done(err);
     }

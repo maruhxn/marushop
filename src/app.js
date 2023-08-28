@@ -16,6 +16,7 @@ import HttpException from "./libs/http-exception.js";
 import ErrorFilter from "./middlewares/error.filter.js";
 import passportConfig from "./passport/index.js";
 import authRouter from "./routes/auth.router.js";
+import cartRouter from "./routes/cart.router.js";
 import categoryRouter from "./routes/category.router.js";
 import productsRouter from "./routes/products.router.js";
 const __dirname = path.resolve();
@@ -71,6 +72,7 @@ app.use("/images", express.static(path.join(__dirname, "../product-images")));
 app.use("/api/auth", authRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/category", categoryRouter);
+app.use("/api/cart", cartRouter);
 
 app.use((req, res, next) => {
   const error = new HttpException(

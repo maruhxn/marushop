@@ -32,3 +32,108 @@ maruhxn <maruhan1016@gmail.com>
 - Mail Service: AWS SES
 
 ## 문제 해결 과정
+
+### 장바구니 추가 로직 작성 중에서..
+
+1. 유저 아이디에 해당하는 장바구니가 이미 있는지 확인
+2. 없다면? cart를 만들고, cartItem을 만듦.
+3. 있다면?
+   3-1. cartItems 중 productId가 주어진 파라미터값과 일치하는 것이 있는지 확인(이미 장바구니에 추가한 상품인지 확인)
+   3-2. 이미 장바구니에 있다면? -> quantity를 기존 값에서 body로 받은 quantity만큼 더해줌.
+   3-3. 없다면? -> cartItem 생성
+
+위와 같은 로직을 코드로 작성해보니 다음과 같이 너무 많은 분기점이 생겨 가독성 측면에서 코드 개선이 필요해보였음. (처음 61ms, 평균 15ms)
+
+<pre><code>
+export const addProductToCart = async (req, res) => {
+  const { productId } = req.params;
+  const { quantity } = CreateCartItemValidator.parse(req.body);
+
+  // 있다면 해당 장바구니에 이미 cartItem이 있는지 확인
+
+  const exCartItem = await prisma.cartItem.findFirst({
+    where: {
+      userId: req.user.id,
+      productId: +productId,
+    },
+  });
+
+  // cartItem이 없다면, 생성
+  if (!exCartItem) {
+    await prisma.cartItem.create({
+      data: {
+        userId: req.user.id,
+        productId: +productId,
+        quantity,
+      },
+    });
+  } else {
+    // cartItem이 있다면, 수량 수정
+    await prisma.cartItem.update({
+      where: {
+        userId_productId: { userId: req.user.id, productId: +productId },
+      },
+      data: {
+        quantity: exCartItem.quantity + quantity,
+      },
+    });
+  }
+
+  res.status(201).end();
+};
+</code></pre>
+
+이를 더 가독성 있게 하기 위한 방법을 조사한 결과 prisma client의 upsert라는 함수와 connect라는 option이 매우 유용하였고 이를 통해 if문 없이 한 덩어리의 코드로 로직을 완성할 수 있었음.
+
+<pre><code>
+export const addProductToCart = async (req, res) => {
+  const { productId } = req.params;
+  const { quantity } = CreateCartItemValidator.parse(req.body);
+
+  // productId에 해당하는 상품이 있는지 확인
+  const exProduct = await prisma.product.findUnique({
+    where: {
+      id: +productId,
+    },
+  });
+
+  if (!exProduct)
+    throw new HttpException("요청하신 상품 정보가 없습니다.", 404);
+
+  await prisma.cartItem.upsert({
+    where: {
+      userId_productId: {
+        userId: req.user.id,
+        productId: +productId,
+      },
+    },
+    create: {
+      user: {
+        connect: {
+          id: req.user.id,
+        },
+      },
+      product: {
+        connect: {
+          id: +productId,
+        },
+      },
+      quantity,
+    },
+    update: {
+      quantity: {
+        increment: quantity,
+      },
+    },
+  });
+
+  res.status(201).end();
+};
+</code></pre>
+
+- 성능 비교 (다시하자)
+  수정 전: 처음 61ms, 평균 15ms 정도
+  수정 후: 처음 67ms, 평균 16ms 정도
+
+쿼리가 복잡해져서 시간이 조금 더 늘어나긴 했지만, 가독성과 유지보수 비용을 고려했을 때 후자가 더 괜찮다고 판단.
+물론 postman 등으로 제대로 비교해봐야될듯

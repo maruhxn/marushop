@@ -22,6 +22,9 @@ export const getAllProducts = async (req, res) => {
       { title: "asc" },
     ],
   });
+
+  if (products.length <= 0)
+    throw new HttpException("상품 정보가 없습니다.", 404);
   return res.status(200).json({
     ok: true,
     msg: "전체 상품 조회 완료.",
@@ -37,6 +40,15 @@ export const createProduct = async (req, res) => {
   const slug = createSlug(title);
 
   // 데이터베이스에 저장
+
+  const exCategory = await prisma.category.findFirst({
+    where: {
+      id: +categoryId,
+    },
+  });
+  if (!exCategory)
+    throw new HttpException("요청하신 카테고리 정보가 없습니다.", 404);
+
   const newProduct = await prisma.product.create({
     data: {
       title,

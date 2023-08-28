@@ -16,7 +16,12 @@ export default () => {
         id: userId,
       },
     });
-    done(null, user);
+    done(null, {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      isAdmin: user.isAdmin,
+    });
   });
 
   passport.use("local", localStrategyConfig);
