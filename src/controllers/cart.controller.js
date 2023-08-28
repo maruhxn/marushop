@@ -25,6 +25,15 @@ export const addProductToCart = async (req, res) => {
   const { productId } = req.params;
   const { quantity } = CreateCartItemValidator.parse(req.body);
 
+  const exProduct = await prisma.product.findUnique({
+    where: {
+      id: +productId,
+    },
+  });
+
+  if (!exProduct)
+    throw new HttpException("요청하신 상품 정보가 없습니다.", 404);
+
   // 있다면 해당 장바구니에 이미 cartItem이 있는지 확인
   const exCartItem = await prisma.cartItem.findFirst({
     where: {

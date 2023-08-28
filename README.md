@@ -33,8 +33,6 @@ maruhxn <maruhan1016@gmail.com>
 
 ## TODO
 
-Order table 추가 및 로직 작성
-
 config를 통해 개발 및 배포 환경 분리
 
 test code 작성

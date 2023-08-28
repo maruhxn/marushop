@@ -18,6 +18,7 @@ import passportConfig from "./passport/index.js";
 import authRouter from "./routes/auth.router.js";
 import cartRouter from "./routes/cart.router.js";
 import categoryRouter from "./routes/category.router.js";
+import orderRouter from "./routes/order.router.js";
 import productsRouter from "./routes/products.router.js";
 const __dirname = path.resolve();
 
@@ -73,6 +74,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/cart", cartRouter);
+app.use("/api/order", orderRouter);
 
 app.use((req, res, next) => {
   const error = new HttpException(

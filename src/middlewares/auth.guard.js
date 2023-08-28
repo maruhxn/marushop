@@ -1,3 +1,4 @@
+import { prisma } from "../app.js";
 import HttpException from "../libs/http-exception.js";
 
 export const isLoggedIn = (req, res, next) => {
@@ -19,4 +20,24 @@ export const isAdmin = (req, res, next) => {
     return next();
   }
   throw new HttpException("권한이 없습니다.", 403);
+};
+
+export const checkUserByOrderId = async (req, res, next) => {
+  const { orderId } = req.params;
+  const order = await prisma.order.findUnique({
+    where: {
+      id: +orderId,
+    },
+    select: {
+      userId: true,
+    },
+  });
+
+  if (!order)
+    return next(new HttpException("요청하신 주문 정보가 없습니다.", 404));
+
+  if (order.userId !== req.user.id)
+    return next(new HttpException("권한이 없습니다.", 403));
+
+  next();
 };
