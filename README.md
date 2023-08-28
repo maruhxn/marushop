@@ -31,9 +31,25 @@ maruhxn <maruhan1016@gmail.com>
 - DB: local postgresql
 - Mail Service: AWS SES
 
+## TODO
+
+Order table 추가 및 로직 작성
+
+config를 통해 개발 및 배포 환경 분리
+
+test code 작성
+
+PortOne 연결
+
+AWS SES 연결을 통한 이메일 서비스 제공
+
 ## 문제 해결 과정
 
-### 장바구니 추가 로직 작성 중에서..
+### 로그인 여부 확인, 어드민 여부 확인
+
+route를 관심사에 따라 분리하고, express의 middleware를 적극 활용하여, 중복되는 부가 기능들을 보다 원활하게 처리.
+
+### 장바구니 추가 로직 작성 중 코드 개선 및 성능
 
 1. 유저 아이디에 해당하는 장바구니가 이미 있는지 확인
 2. 없다면? cart를 만들고, cartItem을 만듦.
