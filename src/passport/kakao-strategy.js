@@ -1,5 +1,6 @@
 import { Strategy as KakaoStrategy } from "passport-kakao";
 import { prisma } from "../app.js";
+import { sendVerificationEmail } from "../libs/email-service.js";
 
 const kakaoStrategyConfig = new KakaoStrategy(
   {
@@ -23,6 +24,9 @@ const kakaoStrategyConfig = new KakaoStrategy(
             profile._json.kakao_account.email === process.env.ADMIN_EMAIL,
         },
       });
+
+      // 이메일 검증 여부 확인
+      if (!user.isVerified) await sendVerificationEmail(user.email);
 
       done(null, user);
     } catch (err) {

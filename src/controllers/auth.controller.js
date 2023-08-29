@@ -3,6 +3,11 @@ import passport from "passport";
 
 import { prisma } from "../app.js";
 import CONFIGS from "../configs/contant.js";
+import {
+  isEmailVerified,
+  sendEmail,
+  sendVerificationEmail,
+} from "../libs/email-service.js";
 import HttpException from "../libs/http-exception.js";
 import { CreateUserValidator } from "../libs/validators/user.validator.js";
 
@@ -48,5 +53,21 @@ export const register = async (req, res, next) => {
     },
   });
 
+  await sendVerificationEmail(email);
   res.status(201).end();
+};
+
+export const verifyEmail = async (req, res, next) => {
+  const isVerified = await isEmailVerified(req.user.email);
+  await prisma.user.update({
+    where: {
+      id: req.user.id,
+    },
+    data: {
+      isVerified,
+    },
+  });
+
+  await sendEmail("JOIN", req.user.email);
+  res.status(204).end();
 };

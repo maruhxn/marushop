@@ -18,6 +18,7 @@ model User {
   googleId String?
   kakaoId  String?
   isAdmin  Boolean @default(false)
+  isVerified Boolean @default(false)
 
   cartItems CartItem[]
   orders    Order[]

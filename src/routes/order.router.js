@@ -8,11 +8,15 @@ import {
   paymentSuccess,
 } from "../controllers/order.controller.js";
 import catchAsync from "../libs/catch-async.js";
-import { checkUserByOrderId, isLoggedIn } from "../middlewares/auth.guard.js";
+import {
+  checkEmailVerified,
+  checkUserByOrderId,
+  isLoggedIn,
+} from "../middlewares/auth.guard.js";
 
 const orderRouter = express.Router();
 
-orderRouter.use(isLoggedIn);
+orderRouter.use(isLoggedIn, checkEmailVerified);
 
 orderRouter.get("/", catchAsync(getOrderList));
 

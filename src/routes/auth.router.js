@@ -1,6 +1,11 @@
 import express from "express";
 import passport from "passport";
-import { login, logout, register } from "../controllers/auth.controller.js";
+import {
+  login,
+  logout,
+  register,
+  verifyEmail,
+} from "../controllers/auth.controller.js";
 import catchAsync from "../libs/catch-async.js";
 import { isLoggedIn, isNotLoggedIn } from "../middlewares/auth.guard.js";
 
@@ -11,6 +16,8 @@ authRouter.post("/login", isNotLoggedIn, catchAsync(login));
 authRouter.post("/logout", isLoggedIn, catchAsync(logout));
 
 authRouter.post("/register", isNotLoggedIn, catchAsync(register));
+
+authRouter.get("/verify-email", isLoggedIn, catchAsync(verifyEmail));
 
 authRouter.get("/google", isNotLoggedIn, passport.authenticate("google"));
 

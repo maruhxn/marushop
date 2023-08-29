@@ -1,4 +1,5 @@
 import { prisma } from "../app.js";
+import { sendEmail } from "../libs/email-service.js";
 import HttpException from "../libs/http-exception.js";
 import { CreateOrderItemValidator } from "../libs/validators/orderItem.validator.js";
 
@@ -238,6 +239,8 @@ export const paymentSuccess = async (req, res) => {
       isPaid: true,
     },
   });
+
+  await sendEmail("ORDER", req.user.email);
 
   return res.status(204).end();
 };

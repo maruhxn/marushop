@@ -6,10 +6,10 @@ import {
   updateCartItem,
 } from "../controllers/cart.controller.js";
 import catchAsync from "../libs/catch-async.js";
-import { isLoggedIn } from "../middlewares/auth.guard.js";
+import { checkEmailVerified, isLoggedIn } from "../middlewares/auth.guard.js";
 
 const cartRouter = express.Router();
-cartRouter.use(isLoggedIn);
+cartRouter.use(isLoggedIn, checkEmailVerified);
 
 cartRouter.get("/", catchAsync(getAllCartItems));
 

@@ -33,13 +33,9 @@ maruhxn <maruhan1016@gmail.com>
 
 ## TODO
 
-config를 통해 개발 및 배포 환경 분리
+통합 테스트
 
-test code 작성
-
-PortOne 연결
-
-AWS SES 연결을 통한 이메일 서비스 제공
+PortOne 연결 - React
 
 ## 문제 해결 과정
 
