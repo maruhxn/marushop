@@ -122,6 +122,15 @@ export const uploadGalleryImages = async (req, res) => {
   const productImage = req.files.file;
 
   const { productId } = req.params;
+
+  const product = await prisma.product.findUnique({
+    where: {
+      id: +productId,
+    },
+  });
+
+  if (!product) throw new HttpException("상품 정보가 없습니다.", 404);
+
   const path =
     "product-images/" + productId + "/gallery/" + req.files.file.name;
   const thumbnailPath =
@@ -143,6 +152,15 @@ export const uploadGalleryImages = async (req, res) => {
 
 export const deleteGalleryImages = async (req, res) => {
   const { productId, imageName } = req.params;
+
+  const product = await prisma.product.findUnique({
+    where: {
+      id: +productId,
+    },
+  });
+
+  if (!product) throw new HttpException("상품 정보가 없습니다.", 404);
+
   const originalImgPath =
     "product-images/" + productId + "/gallery/" + imageName;
   const thumbnailImgPath =
