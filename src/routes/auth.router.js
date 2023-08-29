@@ -1,6 +1,7 @@
 import express from "express";
 import passport from "passport";
 import {
+  auth,
   login,
   logout,
   register,
@@ -11,9 +12,11 @@ import { isLoggedIn, isNotLoggedIn } from "../middlewares/auth.guard.js";
 
 const authRouter = express.Router();
 
+authRouter.get("/", catchAsync(auth));
+
 authRouter.post("/login", isNotLoggedIn, catchAsync(login));
 
-authRouter.post("/logout", isLoggedIn, catchAsync(logout));
+authRouter.delete("/logout", isLoggedIn, catchAsync(logout));
 
 authRouter.post("/register", isNotLoggedIn, catchAsync(register));
 
@@ -24,7 +27,7 @@ authRouter.get("/google", isNotLoggedIn, passport.authenticate("google"));
 authRouter.get(
   "/google/callback",
   passport.authenticate("google", {
-    successReturnToOrRedirect: "/",
+    successReturnToOrRedirect: `${process.env.CLIENT_URL}`,
     failureRedirect: "/login",
   })
 );
@@ -34,7 +37,7 @@ authRouter.get("/kakao", isNotLoggedIn, passport.authenticate("kakao"));
 authRouter.get(
   "/kakao/callback",
   passport.authenticate("kakao", {
-    successReturnToOrRedirect: "/",
+    successReturnToOrRedirect: `${process.env.CLIENT_URL}`,
     failureRedirect: "/login",
   })
 );
