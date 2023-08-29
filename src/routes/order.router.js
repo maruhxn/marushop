@@ -28,7 +28,7 @@ orderRouter
   .delete(checkUserByOrderId, catchAsync(deleteOrder));
 
 orderRouter.post("/product/:productId", catchAsync(createOrderByProductId));
-orderRouter.get(
+orderRouter.patch(
   "/:orderId/success",
   checkUserByOrderId,
   catchAsync(paymentSuccess)
