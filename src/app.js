@@ -28,19 +28,19 @@ const app = express();
 const port = 8080 || process.env.PORT;
 passportConfig();
 
+const corsOptions = {
+  origin: process.env.CLIENT_URL, // Adjust this to your frontend's URL
+  credentials: true,
+};
+
 if (process.env.NODE_ENV === "production") {
   app.use(hpp());
   app.use(helmet());
   app.use(morgan("combined"));
-  app.use(
-    cors({
-      origin: "*",
-      credentials: true,
-    })
-  );
+  app.use(cors(corsOptions));
 } else {
   app.use(morgan("dev"));
-  app.use(cors());
+  app.use(cors(corsOptions));
 }
 
 app.use(
@@ -68,7 +68,7 @@ app.use(fileUpload());
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use("/images", express.static(path.join(__dirname, "../product-images")));
+app.use("/images", express.static(path.join(__dirname, "product-images")));
 
 app.use("/api/auth", authRouter);
 app.use("/api/products", productsRouter);
