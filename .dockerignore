@@ -1,5 +1,5 @@
 node_modules
-npm-debug.log
+yarn-error.log
 product-images
 .env
 Dockerfile
@@ -8,3 +8,4 @@ Dockerfile
 docker-compose*.yml
 postgres_data
 redis
+marushop.vuerd.json
