@@ -13,8 +13,7 @@ const localStrategyConfig = new LocalStrategy(
         },
       });
 
-      if (!exUser)
-        return done(null, false, { msg: `Email ${email} not found` });
+      if (!exUser) return done(null, false, `Email ${email} not found`);
 
       if (!exUser.password) {
         const salt = await bcrypt.genSalt(CONFIGS.SALT_ROUNDS);
@@ -32,7 +31,7 @@ const localStrategyConfig = new LocalStrategy(
 
       if (isMatch) return done(null, exUser);
 
-      return done(null, false, { msg: "Invalid email or password." });
+      return done(null, false, "Invalid email or password.");
     } catch (err) {
       done(err);
     }

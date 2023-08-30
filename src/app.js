@@ -20,6 +20,7 @@ import cartRouter from "./routes/cart.router.js";
 import categoryRouter from "./routes/category.router.js";
 import orderRouter from "./routes/order.router.js";
 import productsRouter from "./routes/products.router.js";
+import usersRouter from "./routes/users.router.js";
 const __dirname = path.resolve();
 
 export const prisma = new PrismaClient();
@@ -75,6 +76,7 @@ app.use("/api/products", productsRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/order", orderRouter);
+app.use("/api/users", usersRouter);
 
 app.use((req, res, next) => {
   const error = new HttpException(

@@ -16,3 +16,17 @@ export const LoginValidator = z.object({
     .string()
     .min(6, { message: "비밀번호는 최소 6글자 이상이어야 합니다." }),
 });
+
+export const UpdateUserValidator = z.object({
+  password: z
+    .string()
+    .min(6, { message: "비밀번호는 최소 6글자 이상이어야 합니다." }),
+  updatePassword: z
+    .string()
+    .min(6, { message: "비밀번호는 최소 6글자 이상이어야 합니다." })
+    .optional(),
+  username: z
+    .string()
+    .min(2, { message: "유저이름은 최소 3글자 이상이어야 합니다." })
+    .optional(),
+});

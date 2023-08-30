@@ -57,3 +57,11 @@ export const checkUserByOrderId = async (req, res, next) => {
     next(err);
   }
 };
+
+export const checkUserByUserId = async (req, res, next) => {
+  const { userId } = req.params;
+  if (req.user.id === +userId) {
+    return next();
+  }
+  next(new HttpException("권한이 없습니다.", 403));
+};
