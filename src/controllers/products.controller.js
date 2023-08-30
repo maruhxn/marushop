@@ -1,7 +1,8 @@
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs-extra";
-import ResizeImg from "resize-img";
 import { prisma } from "../app.js";
 import CONFIGS from "../configs/contant.js";
+import { BUCKET_NAME, s3 } from "../configs/s3-client.js";
 import HttpException from "../libs/http-exception.js";
 import { createSlug } from "../libs/utils.js";
 import {
@@ -19,6 +20,13 @@ export const getAllProducts = async (req, res) => {
   const products = await prisma.product.findMany({
     where: {
       categoryId: categoryId && +categoryId,
+    },
+    include: {
+      images: {
+        select: {
+          imagePath: true,
+        },
+      },
     },
     take: CONFIGS.PAGESIZE,
     skip: (page - 1) * CONFIGS.PAGESIZE,
@@ -40,8 +48,9 @@ export const getAllProducts = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-  const productImage = req.files.image;
-  const imageFile = productImage.name;
+  if (req.files.length <= 0)
+    throw new HttpException("이미지를 제공해주세요.", 400);
+
   const { title, description, price, categoryId } =
     CreateProductValidator.parse(req.body);
   const slug = createSlug(title);
@@ -53,18 +62,16 @@ export const createProduct = async (req, res) => {
       price: +price,
       slug,
       categoryId: +categoryId,
-      image: imageFile,
     },
   });
 
-  // 이미지 담을 폴더 생성
-  await fs.mkdirp("product-images/" + newProduct.id);
-  await fs.mkdirp("product-images/" + newProduct.id + "/gallery");
-  await fs.mkdirp("product-images/" + newProduct.id + "/gallery/thumbnail");
-
-  // 로컬에 이미지 저장
-  const imagePath = "product-images/" + newProduct.id + "/" + imageFile;
-  await productImage.mv(imagePath);
+  await prisma.image.createMany({
+    data: req.files.map((file) => ({
+      imageName: file.key.split("/").pop(),
+      imagePath: file.location,
+      productId: newProduct.id,
+    })),
+  });
 
   return res.status(201).end();
 };
@@ -77,25 +84,24 @@ export const getProductById = async (req, res) => {
     },
     include: {
       category: true,
+      images: {
+        select: {
+          imagePath: true,
+        },
+      },
     },
   });
 
   if (!product) throw new HttpException("상품 정보가 없습니다.", 404);
 
-  const galleryDir = "product-images/" + product.id + "/gallery";
-
-  const galleryImages = await fs.readdir(galleryDir);
-
   return res.json({
     ok: true,
     msg: "상품 조회 성공",
-    data: { ...product, galleryImages },
+    data: product,
   });
 };
 
 export const updateProductById = async (req, res) => {
-  const productImage = req.files?.image;
-  const imageFile = productImage?.name;
   const { productId } = req.params;
   const updateProductDto = UpdateProductValidator.parse(req.body);
 
@@ -104,40 +110,18 @@ export const updateProductById = async (req, res) => {
 
   const { title, description, price, categoryId } = updateProductDto;
 
-  let slug;
-  if (title) slug = createSlug(title);
-
-  const exProduct = await prisma.product.findUnique({
-    where: {
-      id: +productId,
-    },
-  });
-
-  if (!exProduct) throw new HttpException("상품 정보가 없습니다.", 404);
-
   await prisma.product.update({
     where: {
       id: +productId,
     },
     data: {
       title,
-      slug,
+      slug: title ? createSlug(title) : undefined,
       description,
-      price: price && +price,
+      price,
       categoryId: categoryId && +categoryId,
-      image: imageFile,
-    },
-    select: {
-      image: true,
     },
   });
-
-  if (imageFile) {
-    const newImagePath = "product-images/" + productId + "/" + imageFile;
-    const exImagePath = "product-images/" + productId + "/" + exProduct.image;
-    await productImage.mv(newImagePath);
-    await fs.remove(exImagePath);
-  }
 
   return res.status(204).end();
 };
@@ -156,25 +140,16 @@ export const deleteProductById = async (req, res) => {
   return res.status(204).end();
 };
 
-export const uploadGalleryImages = async (req, res) => {
-  const productImage = req.files.file;
+export const uploadGalleryImage = async (req, res) => {
   const { productId } = req.params;
 
-  const path =
-    "product-images/" + productId + "/gallery/" + req.files.file.name;
-  const thumbnailPath =
-    "product-images/" + productId + "/gallery/thumbnail/" + req.files.file.name;
-
-  // 원본 -> gallery 폴더
-  await productImage.mv(path);
-
-  // 이미지 리사이즈
-  const buf = await ResizeImg(fs.readFileSync(path), {
-    width: 100,
-    height: 100,
+  await prisma.image.create({
+    data: {
+      imageName: req.file.key.split("/").pop(),
+      imagePath: req.file.location,
+      productId: +productId,
+    },
   });
-
-  fs.writeFileSync(thumbnailPath, buf);
 
   return res.status(201).end();
 };
@@ -182,13 +157,19 @@ export const uploadGalleryImages = async (req, res) => {
 export const deleteGalleryImages = async (req, res) => {
   const { productId, imageName } = req.params;
 
-  const originalImgPath =
-    "product-images/" + productId + "/gallery/" + imageName;
-  const thumbnailImgPath =
-    "product-images/" + productId + "/gallery/thumbnail/" + imageName;
+  await prisma.image.delete({
+    where: {
+      imageName,
+      productId: +productId,
+    },
+  });
 
-  await fs.remove(originalImgPath);
-  await fs.remove(thumbnailImgPath);
+  const deleteCommand = new DeleteObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: `product-images/${imageName}`,
+  });
+
+  await s3.send(deleteCommand);
 
   return res.status(204).end();
 };

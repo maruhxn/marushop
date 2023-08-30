@@ -8,16 +8,14 @@ import dotenv from "dotenv";
 import EMAIL_TYPE from "../configs/email-type.js";
 import HttpException from "./http-exception.js";
 
-const REGION = "ap-northeast-2";
-
 dotenv.config();
 // Create SES service object.
 const sesClient = new SESClient({
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY,
-    secretAccessKey: "lx3uWfRMcJUFhocHm2N+YuAdv7T7f0epD9TiQP1e",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
-  region: REGION,
+  region: process.env.AWS_REGION,
 });
 
 export const sendVerificationEmail = async (email) => {
@@ -29,6 +27,7 @@ export const sendVerificationEmail = async (email) => {
     await sesClient.send(verifyCommand);
     console.log(`Verification email sent to ${email}.`);
   } catch (error) {
+    console.error(error);
     throw new HttpException("이메일을 수신 중 에러가 발생했습니다.", 500);
   }
 };
@@ -73,8 +72,8 @@ export const sendEmail = async (type, toAddress) => {
 
   try {
     return await sesClient.send(sendEmailCommand);
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(error);
     throw new HttpException("이메일을 수신 중 에러가 발생했습니다.", 500);
   }
 };

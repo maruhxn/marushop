@@ -12,7 +12,6 @@ import passport from "passport";
 import path from "path";
 import { createClient } from "redis";
 
-import fileUpload from "express-fileupload";
 import HttpException from "./libs/http-exception.js";
 import ErrorFilter from "./middlewares/error.filter.js";
 import passportConfig from "./passport/index.js";
@@ -86,7 +85,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use(fileUpload());
+// app.use(fileUpload());
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
