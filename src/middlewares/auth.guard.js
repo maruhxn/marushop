@@ -34,7 +34,7 @@ export const isAdmin = (req, res, next) => {
   next(new HttpException("권한이 없습니다.", 403));
 };
 
-export const checkUserByOrderId = async (req, res, next) => {
+export const checkUserByOrderIdOrAdmin = async (req, res, next) => {
   const { orderId } = req.params;
   try {
     const order = await prisma.order.findUnique({
@@ -49,7 +49,7 @@ export const checkUserByOrderId = async (req, res, next) => {
     if (!order)
       return next(new HttpException("요청하신 주문 정보가 없습니다.", 404));
 
-    if (order.userId !== req.user.id)
+    if (order.userId !== req.user.id && !req.user.isAdmin)
       return next(new HttpException("권한이 없습니다.", 403));
 
     next();

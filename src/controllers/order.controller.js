@@ -1,12 +1,46 @@
 import { prisma } from "../app.js";
+import CONFIGS from "../configs/contant.js";
 import { sendEmail } from "../libs/email-service.js";
 import HttpException from "../libs/http-exception.js";
+import { OrderQueryValidator } from "../libs/validators/order-query.validator.js";
 import { CreateOrderItemValidator } from "../libs/validators/orderItem.validator.js";
 
-export const getOrderList = async (req, res) => {
-  const orderList = await prisma.order.findMany({
+export const getAllOrders = async (req, res) => {
+  const { page = 1 } = OrderQueryValidator.parse(req.query);
+  const orders = await prisma.order.findMany({
+    include: {
+      orderItems: {
+        select: {
+          product: {
+            select: {
+              title: true,
+            },
+          },
+        },
+      },
+    },
+    take: CONFIGS.PAGESIZE,
+    skip: (page - 1) * CONFIGS.PAGESIZE,
+    orderBy: [{ orderDate: "asc" }],
+  });
+
+  if (orders.length <= 0) throw new HttpException("주문 내역이 없습니다.", 404);
+  return res.status(200).json({
+    ok: true,
+    msg: "전체 주문 내역 조회 성공.",
+    data: orders,
+  });
+};
+
+export const getOrdersByProductId = async (req, res) => {
+  const { productId } = req.params;
+  const ordersByProductId = await prisma.order.findMany({
     where: {
-      userId: req.user.id,
+      orderItems: {
+        every: {
+          productId: +productId,
+        },
+      },
     },
     include: {
       orderItems: {
@@ -21,10 +55,41 @@ export const getOrderList = async (req, res) => {
     },
   });
 
+  if (ordersByProductId.length <= 0)
+    throw new HttpException("해당 상품에 대한 주문 내역이 없습니다.", 404);
   return res.status(200).json({
     ok: true,
-    msg: "주문 내역 조회 성공",
-    data: orderList,
+    msg: "상품별 주문 내역 조회 성공.",
+    data: ordersByProductId,
+  });
+};
+
+export const getOrdersByUserId = async (req, res) => {
+  const { userId } = req.params;
+  const ordersByUserId = await prisma.order.findMany({
+    where: {
+      userId: +userId,
+    },
+    include: {
+      orderItems: {
+        select: {
+          product: {
+            select: {
+              title: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (ordersByUserId.length <= 0)
+    throw new HttpException("해당 유저의 주문 내역이 없습니다.", 404);
+
+  return res.status(200).json({
+    ok: true,
+    msg: "유저별 주문 내역 조회 성공.",
+    data: ordersByUserId,
   });
 };
 
@@ -110,6 +175,8 @@ export const createOrderOnCart = async (req, res) => {
     },
   });
 
+  if (cartItems.length <= 0)
+    throw new HttpException("장바구니에 상품이 없습니다.", 400);
   // 총 가격 계산
   const totalPrice = cartItems.reduce((total, cartItem) => {
     return total + cartItem.product.price * cartItem.quantity;

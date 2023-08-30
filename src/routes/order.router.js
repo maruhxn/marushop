@@ -3,13 +3,16 @@ import {
   createOrderByProductId,
   createOrderOnCart,
   deleteOrder,
+  getAllOrders,
   getOrderDetail,
-  getOrderList,
+  getOrdersByProductId,
+  getOrdersByUserId,
   paymentSuccess,
 } from "../controllers/order.controller.js";
 import catchAsync from "../libs/catch-async.js";
 import {
-  checkUserByOrderId,
+  checkUserByOrderIdOrAdmin,
+  isAdmin,
   isEmailVerified,
   isLoggedIn,
 } from "../middlewares/auth.guard.js";
@@ -18,19 +21,25 @@ const orderRouter = express.Router();
 
 orderRouter.use(isLoggedIn, isEmailVerified);
 
-orderRouter.get("/", catchAsync(getOrderList));
+orderRouter.get("/", isAdmin, catchAsync(getAllOrders));
 
 orderRouter.post("/cart", catchAsync(createOrderOnCart));
 
+orderRouter.get("/users/:userId", catchAsync(getOrdersByUserId));
+
 orderRouter
   .route("/:orderId")
-  .get(checkUserByOrderId, catchAsync(getOrderDetail))
-  .delete(checkUserByOrderId, catchAsync(deleteOrder));
+  .get(checkUserByOrderIdOrAdmin, catchAsync(getOrderDetail))
+  .delete(checkUserByOrderIdOrAdmin, catchAsync(deleteOrder));
 
-orderRouter.post("/product/:productId", catchAsync(createOrderByProductId));
+orderRouter
+  .route("/products/:productId")
+  .get(catchAsync(getOrdersByProductId))
+  .post(catchAsync(createOrderByProductId));
+
 orderRouter.patch(
   "/:orderId/success",
-  checkUserByOrderId,
+  checkUserByOrderIdOrAdmin,
   catchAsync(paymentSuccess)
 );
 
