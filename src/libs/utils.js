@@ -15,3 +15,11 @@ export const createSlug = (str) => {
 
   return str;
 };
+
+export const createErrorResponse = (res, { status, msg }) => {
+  return res.status(status).json({
+    ok: false,
+    status,
+    msg,
+  });
+};
