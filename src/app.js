@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaSessionStore } from "@quixo3/prisma-session-store";
 import compression from "compression";
+import RedisStore from "connect-redis";
 import cors from "cors";
 import "dotenv/config";
 import express from "express";
@@ -10,6 +10,7 @@ import hpp from "hpp";
 import morgan from "morgan";
 import passport from "passport";
 import path from "path";
+import { createClient } from "redis";
 
 import fileUpload from "express-fileupload";
 import HttpException from "./libs/http-exception.js";
@@ -24,6 +25,25 @@ import usersRouter from "./routes/users.router.js";
 const __dirname = path.resolve();
 
 export const prisma = new PrismaClient();
+
+// Initialize client.
+let redisClient = createClient();
+
+redisClient.on("connect", () => {
+  console.info("Redis connected!");
+});
+
+redisClient.on("error", (err) => {
+  console.error("Redis Client Error", err);
+});
+
+redisClient.connect().catch(console.error);
+
+// Initialize store.
+let redisStore = new RedisStore({
+  client: redisClient,
+  prefix: "marushop:",
+});
 
 const app = express();
 const port = 8080 || process.env.PORT;
@@ -55,10 +75,11 @@ app.use(
     name: "marushop-cookie",
     resave: false,
     saveUninitialized: false,
-    store: new PrismaSessionStore(prisma, {
-      logger: false,
-      sessionModelName: "session",
-    }),
+    // store: new PrismaSessionStore(prisma, {
+    //   logger: false,
+    //   sessionModelName: "session",
+    // }),
+    store: redisStore,
   })
 );
 
