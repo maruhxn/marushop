@@ -57,20 +57,40 @@ export const logout = (req, res) => {
 export const register = async (req, res) => {
   const { email, password, username } = CreateUserValidator.parse(req.body);
   const salt = await bcrypt.genSalt(CONFIGS.SALT_ROUNDS);
-
-  const newUser = await prisma.user.create({
-    data: {
+  let user;
+  user = await prisma.user.findUnique({
+    where: {
       email,
-      password: await bcrypt.hash(password, salt),
-      username,
-      isAdmin: email === process.env.ADMIN_EMAIL,
-    },
-    select: {
-      id: true,
     },
   });
 
-  req.logIn(newUser, async (err) => {
+  if (user && user.password)
+    throw new HttpException("이미 존재하는 유저입니다.", 400);
+
+  if (user && !user.password) {
+    await prisma.user.update({
+      where: {
+        email,
+      },
+      data: {
+        password: await bcrypt.hash(password, salt),
+      },
+    });
+  } else {
+    user = await prisma.user.create({
+      data: {
+        email,
+        password: await bcrypt.hash(password, salt),
+        username,
+        isAdmin: email === process.env.ADMIN_EMAIL,
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  req.logIn(user, async (err) => {
     if (err) {
       return next(err);
     }
@@ -85,6 +105,16 @@ export const verifyEmail = async (req, res) => {
   const isVerified = await isEmailVerified(req.user.email);
 
   if (!isVerified) throw new HttpException("이메일 인증을 수행해주세요.", 403);
+
+  const exUser = await prisma.user.findUnique({
+    where: {
+      id: req.user.id,
+    },
+  });
+
+  if (exUser.isVerified)
+    throw new HttpException("이미 인증된 이메일입니다.", 400);
+
   await prisma.user.update({
     where: {
       id: req.user.id,

@@ -4,7 +4,7 @@
 
 maruhxn <maruhan1016@gmail.com>
 
-개발기간: 2023-08-23 ~ 2023-09-25
+개발기간: 2023-08-23 ~ 2023-09-30
 
 ## Notion: https://www.notion.so/630f74831ec14b5f80db51f6f027b588
 
