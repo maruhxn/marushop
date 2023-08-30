@@ -5,6 +5,7 @@ import {
   deleteProductById,
   getAllProducts,
   getProductById,
+  updateProductById,
   uploadGalleryImages,
 } from "../controllers/products.controller.js";
 import catchAsync from "../libs/catch-async.js";
@@ -17,16 +18,17 @@ productsRouter
   .get(catchAsync(getAllProducts))
   .post(isAdmin, catchAsync(createProduct));
 
-productsRouter.post(
-  "/product-gallery/:productId",
-  isAdmin,
-  catchAsync(uploadGalleryImages)
-);
-
 productsRouter
   .route("/:productId")
   .get(catchAsync(getProductById))
+  .patch(isAdmin, catchAsync(updateProductById))
   .delete(isAdmin, catchAsync(deleteProductById));
+
+productsRouter.post(
+  "/:productId/images",
+  isAdmin,
+  catchAsync(uploadGalleryImages)
+);
 
 productsRouter.delete(
   "/:productId/images/:imageName",

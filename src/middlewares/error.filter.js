@@ -27,6 +27,12 @@ const ErrorFilter = (err, req, res, next) => {
           msg: "요청값에 해당하는 데이터가 이미 존재합니다.",
         });
         break;
+      case "P2003":
+        createErrorResponse(res, {
+          status: 404,
+          msg: "참조값을 찾을 수 없습니다.",
+        });
+        break;
       case "P2025":
         createErrorResponse(res, {
           status: 404,

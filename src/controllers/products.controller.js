@@ -4,7 +4,10 @@ import { prisma } from "../app.js";
 import CONFIGS from "../configs/contant.js";
 import HttpException from "../libs/http-exception.js";
 import { createSlug } from "../libs/utils.js";
-import { CreateProductValidator } from "../libs/validators/product.validator.js";
+import {
+  CreateProductValidator,
+  UpdateProductValidator,
+} from "../libs/validators/product.validator.js";
 import { QueryValidator } from "../libs/validators/query.validator.js";
 
 export const getAllProducts = async (req, res) => {
@@ -38,16 +41,6 @@ export const createProduct = async (req, res) => {
   const { title, description, price, categoryId } =
     CreateProductValidator.parse(req.body);
   const slug = createSlug(title);
-
-  // 데이터베이스에 저장
-
-  const exCategory = await prisma.category.findFirst({
-    where: {
-      id: +categoryId,
-    },
-  });
-  if (!exCategory)
-    throw new HttpException("요청하신 카테고리 정보가 없습니다.", 404);
 
   const newProduct = await prisma.product.create({
     data: {
@@ -96,17 +89,58 @@ export const getProductById = async (req, res) => {
   });
 };
 
-export const deleteProductById = async (req, res) => {
+export const updateProductById = async (req, res) => {
+  const productImage = req.files?.image;
+  const imageFile = productImage?.name;
   const { productId } = req.params;
-  const imageDirPath = "product-images/" + productId;
+  const updateProductDto = UpdateProductValidator.parse(req.body);
 
-  const product = await prisma.product.findUnique({
+  if (Object.keys(updateProductDto).length <= 0)
+    throw new HttpException("수정 데이터를 1개 이상 입력해주세요", 400);
+
+  const { title, description, price, categoryId } = updateProductDto;
+
+  let slug;
+  if (title) slug = createSlug(title);
+
+  const exProduct = await prisma.product.findUnique({
     where: {
       id: +productId,
     },
   });
 
-  if (!product) throw new HttpException("상품 정보가 없습니다.", 404);
+  if (!exProduct) throw new HttpException("상품 정보가 없습니다.", 404);
+
+  await prisma.product.update({
+    where: {
+      id: +productId,
+    },
+    data: {
+      title,
+      slug,
+      description,
+      price: price && +price,
+      categoryId: categoryId && +categoryId,
+      image: imageFile,
+    },
+    select: {
+      image: true,
+    },
+  });
+
+  if (imageFile) {
+    const newImagePath = "product-images/" + productId + "/" + imageFile;
+    const exImagePath = "product-images/" + productId + "/" + exProduct.image;
+    await productImage.mv(newImagePath);
+    await fs.remove(exImagePath);
+  }
+
+  return res.status(204).end();
+};
+
+export const deleteProductById = async (req, res) => {
+  const { productId } = req.params;
+  const imageDirPath = "product-images/" + productId;
 
   await prisma.product.delete({
     where: {
@@ -120,16 +154,7 @@ export const deleteProductById = async (req, res) => {
 
 export const uploadGalleryImages = async (req, res) => {
   const productImage = req.files.file;
-
   const { productId } = req.params;
-
-  const product = await prisma.product.findUnique({
-    where: {
-      id: +productId,
-    },
-  });
-
-  if (!product) throw new HttpException("상품 정보가 없습니다.", 404);
 
   const path =
     "product-images/" + productId + "/gallery/" + req.files.file.name;
@@ -152,14 +177,6 @@ export const uploadGalleryImages = async (req, res) => {
 
 export const deleteGalleryImages = async (req, res) => {
   const { productId, imageName } = req.params;
-
-  const product = await prisma.product.findUnique({
-    where: {
-      id: +productId,
-    },
-  });
-
-  if (!product) throw new HttpException("상품 정보가 없습니다.", 404);
 
   const originalImgPath =
     "product-images/" + productId + "/gallery/" + imageName;
