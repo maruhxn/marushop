@@ -3,6 +3,7 @@ import {
   createCategory,
   deleteCategoryById,
   getAllCategories,
+  updateCategoryById,
 } from "../controllers/category.controller.js";
 import catchAsync from "../libs/catch-async.js";
 import { isAdmin } from "../middlewares/auth.guard.js";
@@ -16,5 +17,6 @@ categoryRouter
 
 categoryRouter
   .route("/:categoryId")
+  .put(isAdmin, catchAsync(updateCategoryById))
   .delete(isAdmin, catchAsync(deleteCategoryById));
 export default categoryRouter;
