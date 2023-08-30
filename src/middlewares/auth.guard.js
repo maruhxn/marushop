@@ -1,5 +1,5 @@
 import { prisma } from "../app.js";
-import { isEmailVerified } from "../libs/email-service.js";
+import { checkEmailVerified } from "../libs/email-service.js";
 import HttpException from "../libs/http-exception.js";
 
 export const isLoggedIn = (req, res, next) => {
@@ -16,9 +16,13 @@ export const isNotLoggedIn = (req, res, next) => {
   next();
 };
 
-export const checkEmailVerified = async (req, res, next) => {
-  if (await isEmailVerified(req.user.email)) {
-    return next();
+export const isEmailVerified = async (req, res, next) => {
+  try {
+    if (await checkEmailVerified(req.user.email)) {
+      return next();
+    }
+  } catch (err) {
+    return next(err);
   }
   next(new HttpException("이메일 인증이 필요합니다.", 403));
 };
@@ -32,20 +36,24 @@ export const isAdmin = (req, res, next) => {
 
 export const checkUserByOrderId = async (req, res, next) => {
   const { orderId } = req.params;
-  const order = await prisma.order.findUnique({
-    where: {
-      id: +orderId,
-    },
-    select: {
-      userId: true,
-    },
-  });
+  try {
+    const order = await prisma.order.findUnique({
+      where: {
+        id: +orderId,
+      },
+      select: {
+        userId: true,
+      },
+    });
 
-  if (!order)
-    return next(new HttpException("요청하신 주문 정보가 없습니다.", 404));
+    if (!order)
+      return next(new HttpException("요청하신 주문 정보가 없습니다.", 404));
 
-  if (order.userId !== req.user.id)
-    return next(new HttpException("권한이 없습니다.", 403));
+    if (order.userId !== req.user.id)
+      return next(new HttpException("권한이 없습니다.", 403));
 
-  next();
+    next();
+  } catch (err) {
+    next(err);
+  }
 };

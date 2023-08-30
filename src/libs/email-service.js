@@ -33,14 +33,16 @@ export const sendVerificationEmail = async (email) => {
   }
 };
 
-export async function isEmailVerified(email) {
+export async function checkEmailVerified(email) {
   try {
     const listResponse = await sesClient.send(new ListIdentitiesCommand({}));
     const verifiedEmails = listResponse.Identities || [];
     return verifiedEmails.includes(email);
   } catch (error) {
-    console.error("Error checking email verification:", error);
-    return false;
+    throw new HttpException(
+      "이메일 인증 정보 확인 중 에러가 발생했습니다.",
+      500
+    );
   }
 }
 

@@ -8,10 +8,14 @@ import {
   CreateProductValidator,
   UpdateProductValidator,
 } from "../libs/validators/product.validator.js";
-import { QueryValidator } from "../libs/validators/query.validator.js";
+import { ProductsQueryValidator } from "../libs/validators/products-query.validator.js";
 
 export const getAllProducts = async (req, res) => {
-  const { categoryId, page = 1, sortQuery } = QueryValidator.parse(req.query);
+  const {
+    categoryId,
+    page = 1,
+    sortQuery,
+  } = ProductsQueryValidator.parse(req.query);
   const products = await prisma.product.findMany({
     where: {
       categoryId: categoryId && +categoryId,

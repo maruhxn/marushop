@@ -4,7 +4,7 @@ import passport from "passport";
 import { prisma } from "../app.js";
 import CONFIGS from "../configs/contant.js";
 import {
-  isEmailVerified,
+  checkEmailVerified,
   sendEmail,
   sendVerificationEmail,
 } from "../libs/email-service.js";
@@ -102,7 +102,7 @@ export const register = async (req, res) => {
 };
 
 export const verifyEmail = async (req, res) => {
-  const isVerified = await isEmailVerified(req.user.email);
+  const isVerified = await checkEmailVerified(req.user.email);
 
   if (!isVerified) throw new HttpException("이메일 인증을 수행해주세요.", 403);
 
