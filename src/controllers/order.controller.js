@@ -2,7 +2,6 @@ import { prisma } from "../app.js";
 import CONFIGS from "../configs/contant.js";
 import HttpException from "../libs/http-exception.js";
 import { OrderQueryValidator } from "../libs/validators/order-query.validator.js";
-import { CreateOrderValidator } from "../libs/validators/order.validator.js";
 
 export const getAllOrders = async (req, res) => {
   const { page = 1 } = OrderQueryValidator.parse(req.query);
@@ -116,78 +115,6 @@ export const getOrderDetail = async (req, res) => {
     msg: `주문번호 - ${order.id} 조회 성공`,
     data: order,
   });
-};
-
-export const createOrder = async (req, res) => {
-  const {} = CreateOrderValidator.parse(req.body);
-  // const preVerification = await axios({
-  //   url: "https://api.iamport.kr/payments/prepare",
-  //   method: "post",
-  //   headers: { "Content-Type": "application/json" },
-  //   data: {
-  //     merchant_uid, // 가맹점 주문번호
-  //     amount: 2, // 결제 예정금액
-  //     //그외 order collection에 저장할 정보도 같이 전송
-  //   },
-  // });
-
-  const cartItems = await prisma.cartItem.findMany({
-    where: {
-      userId: req.user.id,
-      productId:
-        typeof orderItemIds === "string"
-          ? orderItemIds
-          : {
-              in: orderItemIds,
-            },
-    },
-    select: {
-      productId: true,
-      quantity: true,
-    },
-  });
-
-  // order 및 orderItem 만들기
-  await prisma.order.create({
-    data: {
-      id,
-      totalPrice,
-      user: {
-        connect: {
-          id: req.user.id,
-        },
-      },
-      orderItems: {
-        create: cartItems.map((cartItem) => ({
-          product: { connect: { id: cartItem.productId } },
-          quantity: cartItem.quantity,
-        })),
-      },
-      address,
-      tel,
-      postcode,
-    },
-    include: {
-      orderItems: true,
-    },
-  });
-
-  // 장바구니 비우기
-  // await prisma.$transaction([
-  //   prisma.cartItem.deleteMany({
-  //     where: {
-  //       userId: req.user.id,
-  //       productId:
-  //         typeof orderItemIds === "string"
-  //           ? orderItemIds
-  //           : {
-  //               in: orderItemIds,
-  //             },
-  //     },
-  //   }),
-  // ]);
-
-  return res.status(201).end();
 };
 
 export const deleteOrder = async (req, res) => {

@@ -85,6 +85,7 @@ model Order {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   orderItems OrderItem[]
+  payment Payment?
 
   @@index([userId])
 }
@@ -99,4 +100,12 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@id([orderId, productId])
+}
+
+model Payment {
+  id String @id
+  orderId String @unique
+  order Order @relation(fields: [orderId], references: [id])
+  amount Int @default(0)
+  cancel_amount Int @default(0)
 }

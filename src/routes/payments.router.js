@@ -1,5 +1,7 @@
 import express from "express";
 import {
+  paymentsCancel,
+  paymentsCancelForce,
   paymentsComplete,
   paymentsPrepare,
 } from "../controllers/payments.controller.js";
@@ -12,5 +14,7 @@ paymentsRouter.use(isLoggedIn, isEmailVerified);
 
 paymentsRouter.post("/prepare", catchAsync(paymentsPrepare));
 paymentsRouter.post("/complete", catchAsync(paymentsComplete));
+paymentsRouter.post("/cancel", catchAsync(paymentsCancel));
+paymentsRouter.post("/force-cancel", catchAsync(paymentsCancelForce));
 
 export default paymentsRouter;

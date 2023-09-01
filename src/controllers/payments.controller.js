@@ -128,7 +128,7 @@ export const paymentsComplete = async (req, res) => {
       /* TRANSACTION */
       const transactionPromises = [];
 
-      // order 상태 isPaid로 수정
+      // order 상태 isPaid로 수정 + payment 데이터 생성
       transactionPromises.push(
         prisma.order.update({
           where: {
@@ -136,6 +136,12 @@ export const paymentsComplete = async (req, res) => {
           },
           data: {
             isPaid: true,
+            payment: {
+              create: {
+                id: imp_uid,
+                amount: amountToBePaid,
+              },
+            },
           },
         })
       );
@@ -182,4 +188,86 @@ export const paymentsComplete = async (req, res) => {
       });
       break;
   }
+};
+
+// 강제 전액 환불
+export const paymentsCancelForce = async (req, res) => {
+  const { imp_uid, reason, cancel_request_amount } = req.body;
+
+  const getToken = await axios.post("https://api.iamport.kr/users/getToken", {
+    imp_key: process.env.IMP_API_KEY, // REST API키
+    imp_secret: process.env.IMP_API_SECRET, // REST API Secret
+  });
+  const { access_token } = getToken.data.response;
+
+  await axios.post(
+    "https://api.iamport.kr/payments/cancel",
+    {
+      reason, // 가맹점 클라이언트로부터 받은 환불사유
+      imp_uid, // imp_uid를 환불 `unique key`로 입력
+      amount: cancel_request_amount, // 가맹점 클라이언트로부터 받은 환불금액
+      checksum: cancel_request_amount, // [권장] 환불 가능 금액 입력
+    },
+    {
+      headers: { Authorization: access_token }, // 인증 토큰 Authorization header에 추가
+    }
+  );
+
+  return res.status(204).end();
+};
+
+// 환불
+export const paymentsCancel = async (req, res) => {
+  const { merchant_uid, reason, cancel_request_amount } = req.body;
+
+  const getToken = await axios.post("https://api.iamport.kr/users/getToken", {
+    imp_key: process.env.IMP_API_KEY, // REST API키
+    imp_secret: process.env.IMP_API_SECRET, // REST API Secret
+  });
+  const { access_token } = getToken.data.response;
+
+  const paymentData = await prisma.payment.findFirst({
+    where: {
+      orderId: merchant_uid,
+    },
+  });
+
+  const { id, amount, cancel_amount } = paymentData;
+
+  const cancelableAmount = amount - cancel_amount;
+  if (cancelableAmount < 0)
+    throw new HttpException("이미 전액환불된 주문입니다.", 409);
+
+  /* 포트원 REST API로 결제환불 요청 */
+  const getCancelData = await axios.post(
+    "https://api.iamport.kr/payments/cancel",
+    {
+      reason, // 가맹점 클라이언트로부터 받은 환불사유
+      imp_uid: id, // imp_uid를 환불 `unique key`로 입력
+      amount: cancel_request_amount, // 가맹점 클라이언트로부터 받은 환불금액
+      checksum: cancelableAmount, // [권장] 환불 가능 금액 입력
+    },
+    {
+      headers: { Authorization: access_token }, // 인증 토큰 Authorization header에 추가
+    }
+  );
+
+  const { response } = getCancelData.data;
+
+  const updatedPaymentData = await prisma.payment.update({
+    where: {
+      orderId: response.merchant_uid,
+    },
+    data: {
+      cancel_amount: {
+        increment: +cancel_request_amount,
+      },
+    },
+  });
+
+  res.status(200).json({
+    ok: true,
+    msg: "환불 결과 반환",
+    data: updatedPaymentData,
+  });
 };

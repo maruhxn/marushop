@@ -9,7 +9,11 @@ export const getAllCartItems = async (req, res) => {
       userId: req.user.id,
     },
     select: {
-      product: true,
+      product: {
+        include: {
+          images: true,
+        },
+      },
       quantity: true,
     },
   });
@@ -135,7 +139,11 @@ export const addSelectedItemsToSession = async (req, res) => {
       },
     },
     select: {
-      product: true,
+      product: {
+        include: {
+          images: true,
+        },
+      },
       quantity: true,
     },
   });
