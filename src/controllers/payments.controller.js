@@ -9,31 +9,11 @@ import {
 
 // 결제 사전 검증
 export const paymentsPrepare = async (req, res) => {
-  const { amount, merchant_uid, address, orderItemIds, postcode, tel } =
+  const { amount, merchant_uid, address, postcode, tel } =
     PreparePaymentsValidator.parse(req.body);
 
-  // 장바구니에서 해당 아이템 가져오기
-  const cartItems = await prisma.cartItem.findMany({
-    where: {
-      userId: req.user.id,
-      productId:
-        typeof orderItemIds === "string"
-          ? orderItemIds
-          : {
-              in: orderItemIds,
-            },
-    },
-    select: {
-      quantity: true,
-      product: {
-        select: {
-          id: true,
-          stock: true,
-          title: true,
-        },
-      },
-    },
-  });
+  // 세션에서 선택된 아이템 가져오기
+  const cartItems = req.session.selectedItems;
 
   const hasOutOfStockProduct = cartItems.some(
     // 이미 품절이거나, 남은 수량보다 많은 상품을 구입한 경우
@@ -78,7 +58,7 @@ export const paymentsPrepare = async (req, res) => {
     }
   );
 
-  if (data.code !== 0) throw new HttpException(data.message, 401);
+  if (data.code !== 0) throw new HttpException(data.message, 400);
 
   return res.status(200).json(data);
 };
@@ -190,6 +170,8 @@ export const paymentsComplete = async (req, res) => {
 
       // 트랜잭션 실행
       await prisma.$transaction(transactionPromises);
+
+      req.session.selectedItems = null;
 
       // 결제 완료 이메일 보내기
       await sendEmail("ORDER", req.user.email);

@@ -39,7 +39,7 @@ export const checkUserByOrderIdOrAdmin = async (req, res, next) => {
   try {
     const order = await prisma.order.findUnique({
       where: {
-        id: +orderId,
+        id: orderId,
       },
       select: {
         userId: true,

@@ -1,6 +1,7 @@
 import express from "express";
 import {
   addProductToCart,
+  addSelectedItemsToSession,
   deleteCartItem,
   getAllCartItems,
   updateCartItem,
@@ -12,6 +13,8 @@ const cartRouter = express.Router();
 cartRouter.use(isLoggedIn, isEmailVerified);
 
 cartRouter.get("/", catchAsync(getAllCartItems));
+
+cartRouter.post("/select", catchAsync(addSelectedItemsToSession));
 
 cartRouter
   .route("/:productId")

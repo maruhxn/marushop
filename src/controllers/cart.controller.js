@@ -4,17 +4,9 @@ import { CartItemActionTypeValidator } from "../libs/validators/actionType.valid
 import { CreateCartItemValidator } from "../libs/validators/cartItem.validator.js";
 
 export const getAllCartItems = async (req, res) => {
-  let selectedCartItemIds = req.query.cartItem;
-
   const cartItems = await prisma.cartItem.findMany({
     where: {
       userId: req.user.id,
-      productId:
-        typeof selectedCartItemIds === "string"
-          ? selectedCartItemIds
-          : {
-              in: selectedCartItemIds,
-            },
     },
     select: {
       product: true,
@@ -131,4 +123,24 @@ export const deleteCartItem = async (req, res) => {
     },
   });
   res.status(204).end();
+};
+
+export const addSelectedItemsToSession = async (req, res) => {
+  const { selectedCartItemIds } = req.body;
+  const selectedCartItems = await prisma.cartItem.findMany({
+    where: {
+      userId: req.user.id,
+      productId: {
+        in: selectedCartItemIds,
+      },
+    },
+    select: {
+      product: true,
+      quantity: true,
+    },
+  });
+
+  req.session.selectedItems = selectedCartItems;
+
+  res.status(201).end();
 };

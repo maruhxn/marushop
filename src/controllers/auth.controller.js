@@ -20,7 +20,7 @@ export const auth = async (req, res) => {
   return res.status(200).json({
     ok: true,
     msg: "유저 인증 성공",
-    data: req.user,
+    data: { ...req.user, selectedItems: req.session.selectedItems },
   });
 };
 

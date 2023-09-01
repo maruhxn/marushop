@@ -22,11 +22,11 @@ orderRouter.route("/").get(isAdmin, catchAsync(getAllOrders));
 
 orderRouter.get("/users/:userId", catchAsync(getOrdersByUserId));
 
+orderRouter.route("/products/:productId").get(catchAsync(getOrdersByProductId));
+
 orderRouter
   .route("/:orderId")
   .get(checkUserByOrderIdOrAdmin, catchAsync(getOrderDetail))
   .delete(checkUserByOrderIdOrAdmin, catchAsync(deleteOrder));
-
-orderRouter.route("/products/:productId").get(catchAsync(getOrdersByProductId));
 
 export default orderRouter;
