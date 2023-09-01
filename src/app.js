@@ -46,7 +46,6 @@ let redisStore = new RedisStore({
 });
 
 const app = express();
-const port = 8080 || process.env.PORT;
 passportConfig();
 
 const corsOptions = {
@@ -110,6 +109,4 @@ app.use((req, res, next) => {
 
 app.use(ErrorFilter);
 
-app.listen(port, () => {
-  console.log(`⚡️[server]: Server is running on ${port}`);
-});
+export default app;
