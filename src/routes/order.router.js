@@ -1,13 +1,10 @@
 import express from "express";
 import {
-  createOrderByProductId,
-  createOrderOnCart,
   deleteOrder,
   getAllOrders,
   getOrderDetail,
   getOrdersByProductId,
   getOrdersByUserId,
-  paymentSuccess,
 } from "../controllers/order.controller.js";
 import catchAsync from "../libs/catch-async.js";
 import {
@@ -21,9 +18,7 @@ const orderRouter = express.Router();
 
 orderRouter.use(isLoggedIn, isEmailVerified);
 
-orderRouter.get("/", isAdmin, catchAsync(getAllOrders));
-
-orderRouter.post("/cart", catchAsync(createOrderOnCart));
+orderRouter.route("/").get(isAdmin, catchAsync(getAllOrders));
 
 orderRouter.get("/users/:userId", catchAsync(getOrdersByUserId));
 
@@ -32,15 +27,6 @@ orderRouter
   .get(checkUserByOrderIdOrAdmin, catchAsync(getOrderDetail))
   .delete(checkUserByOrderIdOrAdmin, catchAsync(deleteOrder));
 
-orderRouter
-  .route("/products/:productId")
-  .get(catchAsync(getOrdersByProductId))
-  .post(catchAsync(createOrderByProductId));
-
-orderRouter.patch(
-  "/:orderId/success",
-  checkUserByOrderIdOrAdmin,
-  catchAsync(paymentSuccess)
-);
+orderRouter.route("/products/:productId").get(catchAsync(getOrdersByProductId));
 
 export default orderRouter;

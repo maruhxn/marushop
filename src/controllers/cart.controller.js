@@ -4,9 +4,17 @@ import { CartItemActionTypeValidator } from "../libs/validators/actionType.valid
 import { CreateCartItemValidator } from "../libs/validators/cartItem.validator.js";
 
 export const getAllCartItems = async (req, res) => {
+  let selectedCartItemIds = req.query.cartItem;
+
   const cartItems = await prisma.cartItem.findMany({
     where: {
       userId: req.user.id,
+      productId:
+        typeof selectedCartItemIds === "string"
+          ? selectedCartItemIds
+          : {
+              in: selectedCartItemIds,
+            },
     },
     select: {
       product: true,
@@ -27,7 +35,7 @@ export const addProductToCart = async (req, res) => {
 
   const exProduct = await prisma.product.findUnique({
     where: {
-      id: +productId,
+      id: productId,
     },
   });
 
@@ -38,7 +46,7 @@ export const addProductToCart = async (req, res) => {
   const exCartItem = await prisma.cartItem.findFirst({
     where: {
       userId: req.user.id,
-      productId: +productId,
+      productId,
     },
   });
 
@@ -47,7 +55,7 @@ export const addProductToCart = async (req, res) => {
     await prisma.cartItem.create({
       data: {
         userId: req.user.id,
-        productId: +productId,
+        productId,
         quantity,
       },
     });
@@ -55,7 +63,7 @@ export const addProductToCart = async (req, res) => {
     // cartItem이 있다면, 수량 수정
     await prisma.cartItem.update({
       where: {
-        userId_productId: { userId: req.user.id, productId: +productId },
+        userId_productId: { userId: req.user.id, productId },
       },
       data: {
         quantity: exCartItem.quantity + quantity,
@@ -73,7 +81,7 @@ export const updateCartItem = async (req, res) => {
   const exCartItem = await prisma.cartItem.findUnique({
     where: {
       userId_productId: {
-        productId: +productId,
+        productId,
         userId: req.user.id,
       },
     },
@@ -85,7 +93,7 @@ export const updateCartItem = async (req, res) => {
   await prisma.cartItem.update({
     where: {
       userId_productId: {
-        productId: +productId,
+        productId,
         userId: req.user.id,
       },
     },
@@ -105,7 +113,7 @@ export const deleteCartItem = async (req, res) => {
   const exCartItem = await prisma.cartItem.findUnique({
     where: {
       userId_productId: {
-        productId: +productId,
+        productId,
         userId: req.user.id,
       },
     },
@@ -117,7 +125,7 @@ export const deleteCartItem = async (req, res) => {
   await prisma.cartItem.delete({
     where: {
       userId_productId: {
-        productId: +productId,
+        productId,
         userId: req.user.id,
       },
     },

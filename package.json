@@ -13,6 +13,7 @@
     "@aws-sdk/client-s3": "^3.400.0",
     "@aws-sdk/client-ses": "^3.398.0",
     "@prisma/client": "^5.2.0",
+    "axios": "^1.5.0",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
     "config": "^3.3.9",
@@ -35,6 +36,7 @@
     "prisma": "^5.2.0",
     "redis": "^4.6.8",
     "resize-img": "^2.0.0",
+    "uuid": "^9.0.0",
     "zod": "^3.22.2"
   },
   "devDependencies": {

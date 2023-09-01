@@ -1,9 +1,8 @@
 import { prisma } from "../app.js";
 import CONFIGS from "../configs/contant.js";
-import { sendEmail } from "../libs/email-service.js";
 import HttpException from "../libs/http-exception.js";
 import { OrderQueryValidator } from "../libs/validators/order-query.validator.js";
-import { CreateOrderItemValidator } from "../libs/validators/orderItem.validator.js";
+import { CreateOrderValidator } from "../libs/validators/order.validator.js";
 
 export const getAllOrders = async (req, res) => {
   const { page = 1 } = OrderQueryValidator.parse(req.query);
@@ -38,7 +37,7 @@ export const getOrdersByProductId = async (req, res) => {
     where: {
       orderItems: {
         every: {
-          productId: +productId,
+          productId,
         },
       },
     },
@@ -68,7 +67,7 @@ export const getOrdersByUserId = async (req, res) => {
   const { userId } = req.params;
   const ordersByUserId = await prisma.order.findMany({
     where: {
-      userId: +userId,
+      userId,
     },
     include: {
       orderItems: {
@@ -98,7 +97,7 @@ export const getOrderDetail = async (req, res) => {
 
   const order = await prisma.order.findUnique({
     where: {
-      id: +orderId,
+      id: orderId,
     },
     include: {
       orderItems: true,
@@ -119,72 +118,39 @@ export const getOrderDetail = async (req, res) => {
   });
 };
 
-/**
- * 상품 상세 페이지에서 구매하기 클릭 시 사용
- *  새로운 order 만들고, orderItem은 해당 상품 정보 + quantity
- */
-export const createOrderByProductId = async (req, res) => {
-  const { productId } = req.params;
-  const { quantity } = CreateOrderItemValidator.parse(req.body);
+export const createOrder = async (req, res) => {
+  const {} = CreateOrderValidator.parse(req.body);
+  // const preVerification = await axios({
+  //   url: "https://api.iamport.kr/payments/prepare",
+  //   method: "post",
+  //   headers: { "Content-Type": "application/json" },
+  //   data: {
+  //     merchant_uid, // 가맹점 주문번호
+  //     amount: 2, // 결제 예정금액
+  //     //그외 order collection에 저장할 정보도 같이 전송
+  //   },
+  // });
 
-  const exProduct = await prisma.product.findUnique({
-    where: {
-      id: +productId,
-    },
-  });
-
-  if (!exProduct)
-    throw new HttpException("요청하신 상품 정보가 없습니다.", 404);
-
-  // Transaction 필요
-  await prisma.order.create({
-    data: {
-      totalPrice: exProduct.price * quantity,
-      user: {
-        connect: {
-          id: req.user.id,
-        },
-      },
-      orderItems: {
-        create: {
-          quantity,
-          product: {
-            connect: {
-              id: +productId,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  return res.status(201).end();
-};
-
-/**
- * 장바구니에서 주문 시 사용
- * 새로운 order 만들고, 장바구니 내의 모든 cartItem => orderItem
- */
-export const createOrderOnCart = async (req, res) => {
   const cartItems = await prisma.cartItem.findMany({
     where: {
       userId: req.user.id,
+      productId:
+        typeof orderItemIds === "string"
+          ? orderItemIds
+          : {
+              in: orderItemIds,
+            },
     },
-    include: {
-      product: true,
+    select: {
+      productId: true,
+      quantity: true,
     },
   });
-
-  if (cartItems.length <= 0)
-    throw new HttpException("장바구니에 상품이 없습니다.", 400);
-  // 총 가격 계산
-  const totalPrice = cartItems.reduce((total, cartItem) => {
-    return total + cartItem.product.price * cartItem.quantity;
-  }, 0);
 
   // order 및 orderItem 만들기
   await prisma.order.create({
     data: {
+      id,
       totalPrice,
       user: {
         connect: {
@@ -197,6 +163,9 @@ export const createOrderOnCart = async (req, res) => {
           quantity: cartItem.quantity,
         })),
       },
+      address,
+      tel,
+      postcode,
     },
     include: {
       orderItems: true,
@@ -204,13 +173,19 @@ export const createOrderOnCart = async (req, res) => {
   });
 
   // 장바구니 비우기
-  await prisma.$transaction([
-    prisma.cartItem.deleteMany({
-      where: {
-        userId: req.user.id,
-      },
-    }),
-  ]);
+  // await prisma.$transaction([
+  //   prisma.cartItem.deleteMany({
+  //     where: {
+  //       userId: req.user.id,
+  //       productId:
+  //         typeof orderItemIds === "string"
+  //           ? orderItemIds
+  //           : {
+  //               in: orderItemIds,
+  //             },
+  //     },
+  //   }),
+  // ]);
 
   return res.status(201).end();
 };
@@ -220,26 +195,25 @@ export const deleteOrder = async (req, res) => {
 
   await prisma.order.delete({
     where: {
-      id: +orderId,
+      id: orderId,
     },
   });
 
   return res.status(204).end();
 };
 
+// 결제정보 사후 요청
 export const paymentSuccess = async (req, res) => {
   const { orderId } = req.params;
 
   await prisma.order.update({
     where: {
-      id: +orderId,
+      id: orderId,
     },
     data: {
       isPaid: true,
     },
   });
-
-  await sendEmail("ORDER", req.user.email);
 
   return res.status(204).end();
 };

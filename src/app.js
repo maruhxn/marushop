@@ -19,6 +19,7 @@ import authRouter from "./routes/auth.router.js";
 import cartRouter from "./routes/cart.router.js";
 import categoryRouter from "./routes/category.router.js";
 import orderRouter from "./routes/order.router.js";
+import paymentsRouter from "./routes/payments.router.js";
 import productsRouter from "./routes/products.router.js";
 import usersRouter from "./routes/users.router.js";
 const __dirname = path.resolve();
@@ -49,7 +50,7 @@ const port = 8080 || process.env.PORT;
 passportConfig();
 
 const corsOptions = {
-  origin: process.env.CLIENT_URL, // Adjust this to your frontend's URL
+  origin: [process.env.CLIENT_URL, "http://127.0.0.1:5500"], // Adjust this to your frontend's URL
   credentials: true,
 };
 
@@ -96,6 +97,7 @@ app.use("/api/products", productsRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/order", orderRouter);
+app.use("/api/payments", paymentsRouter);
 app.use("/api/users", usersRouter);
 
 app.use((req, res, next) => {

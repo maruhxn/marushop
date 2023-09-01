@@ -1,5 +1,4 @@
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
-import fs from "fs-extra";
 import { prisma } from "../app.js";
 import CONFIGS from "../configs/contant.js";
 import { BUCKET_NAME, s3 } from "../configs/s3-client.js";
@@ -19,7 +18,7 @@ export const getAllProducts = async (req, res) => {
   } = ProductsQueryValidator.parse(req.query);
   const products = await prisma.product.findMany({
     where: {
-      categoryId: categoryId && +categoryId,
+      categoryId,
     },
     include: {
       images: {
@@ -51,7 +50,7 @@ export const createProduct = async (req, res) => {
   if (req.files.length <= 0)
     throw new HttpException("이미지를 제공해주세요.", 400);
 
-  const { title, description, price, categoryId } =
+  const { title, description, price, categoryId, stock } =
     CreateProductValidator.parse(req.body);
   const slug = createSlug(title);
 
@@ -61,7 +60,8 @@ export const createProduct = async (req, res) => {
       description,
       price: +price,
       slug,
-      categoryId: +categoryId,
+      categoryId,
+      stock: +stock,
     },
   });
 
@@ -80,7 +80,7 @@ export const getProductById = async (req, res) => {
   const { productId } = req.params;
   const product = await prisma.product.findUnique({
     where: {
-      id: +productId,
+      id: productId,
     },
     include: {
       category: true,
@@ -108,18 +108,19 @@ export const updateProductById = async (req, res) => {
   if (Object.keys(updateProductDto).length <= 0)
     throw new HttpException("수정 데이터를 1개 이상 입력해주세요", 400);
 
-  const { title, description, price, categoryId } = updateProductDto;
+  const { title, description, price, categoryId, stock } = updateProductDto;
 
   await prisma.product.update({
     where: {
-      id: +productId,
+      id: productId,
     },
     data: {
       title,
       slug: title ? createSlug(title) : undefined,
       description,
       price,
-      categoryId: categoryId && +categoryId,
+      categoryId,
+      stock,
     },
   });
 
@@ -128,15 +129,13 @@ export const updateProductById = async (req, res) => {
 
 export const deleteProductById = async (req, res) => {
   const { productId } = req.params;
-  const imageDirPath = "product-images/" + productId;
 
   await prisma.product.delete({
     where: {
-      id: +productId,
+      id: productId,
     },
   });
 
-  await fs.remove(imageDirPath);
   return res.status(204).end();
 };
 
@@ -147,7 +146,7 @@ export const uploadGalleryImage = async (req, res) => {
     data: {
       imageName: req.file.key.split("/").pop(),
       imagePath: req.file.location,
-      productId: +productId,
+      productId,
     },
   });
 
@@ -160,7 +159,7 @@ export const deleteGalleryImages = async (req, res) => {
   await prisma.image.delete({
     where: {
       imageName,
-      productId: +productId,
+      productId,
     },
   });
 

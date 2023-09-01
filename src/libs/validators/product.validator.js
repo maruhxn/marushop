@@ -5,6 +5,7 @@ export const CreateProductValidator = z.object({
   description: z.string(),
   price: z.string(),
   categoryId: z.string(),
+  stock: z.string(),
 });
 
 export const UpdateProductValidator = z.object({
@@ -12,4 +13,5 @@ export const UpdateProductValidator = z.object({
   description: z.string().optional(),
   price: z.number().optional(),
   categoryId: z.string().optional(),
+  stock: z.number().optional(),
 });
