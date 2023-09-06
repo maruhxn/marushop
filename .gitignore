@@ -5,3 +5,4 @@ product-images
 postgres_data
 redis
 yarn-error.log
+coverage
