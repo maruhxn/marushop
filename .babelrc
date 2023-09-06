@@ -1,0 +1,3 @@
+{
+  "presets": ["@babel/preset-env"] // ECMAScript2015(es6) 이상의 코드를 이전 버전으로 바꾸어 준다.
+}
