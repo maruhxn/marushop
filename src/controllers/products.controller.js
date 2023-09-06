@@ -1,6 +1,7 @@
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { prisma } from "../app.js";
+
 import CONFIGS from "../configs/contant.js";
+import prisma from "../configs/prisma-client.js";
 import { BUCKET_NAME, s3 } from "../configs/s3-client.js";
 import HttpException from "../libs/http-exception.js";
 import { createSlug } from "../libs/utils.js";
@@ -16,6 +17,14 @@ export const getAllProducts = async (req, res) => {
     page = 1,
     sortQuery,
   } = ProductsQueryValidator.parse(req.query);
+  let orderByArr = [{ title: "asc" }];
+
+  if (sortQuery) {
+    sortQuery === "price_asc"
+      ? orderByArr.unshift({ price: "asc" })
+      : orderByArr.unshift({ price: "desc" });
+  }
+
   const products = await prisma.product.findMany({
     where: {
       categoryId,
@@ -29,12 +38,7 @@ export const getAllProducts = async (req, res) => {
     },
     take: CONFIGS.PAGESIZE,
     skip: (page - 1) * CONFIGS.PAGESIZE,
-    orderBy: [
-      sortQuery && sortQuery === "price_asc"
-        ? { price: "asc" }
-        : { price: "desc" },
-      { title: "asc" },
-    ],
+    orderBy: orderByArr,
   });
 
   if (products.length <= 0)
@@ -47,7 +51,7 @@ export const getAllProducts = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-  if (req.files.length <= 0)
+  if (!req.files || req.files.length <= 0)
     throw new HttpException("이미지를 제공해주세요.", 400);
 
   const { title, description, price, categoryId, stock } =

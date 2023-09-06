@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { Strategy as LocalStrategy } from "passport-local";
-import { prisma } from "../app.js";
 import CONFIGS from "../configs/contant.js";
+import prisma from "../configs/prisma-client.js";
 
 const localStrategyConfig = new LocalStrategy(
   { usernameField: "email", passwordField: "password" },

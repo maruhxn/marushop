@@ -1,4 +1,3 @@
-import { PrismaClient } from "@prisma/client";
 import compression from "compression";
 import RedisStore from "connect-redis";
 import cors from "cors";
@@ -24,9 +23,7 @@ import productsRouter from "./routes/products.router.js";
 import usersRouter from "./routes/users.router.js";
 const __dirname = path.resolve();
 
-export const prisma = new PrismaClient();
-
-// Initialize client.
+// Initialize Redis client.
 let redisClient = createClient();
 
 redisClient.on("connect", () => {

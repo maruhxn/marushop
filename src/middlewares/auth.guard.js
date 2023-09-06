@@ -1,4 +1,4 @@
-import { prisma } from "../app.js";
+import prisma from "../configs/prisma-client.js";
 import { checkEmailVerified } from "../libs/email-service.js";
 import HttpException from "../libs/http-exception.js";
 
@@ -51,7 +51,6 @@ export const checkUserByOrderIdOrAdmin = async (req, res, next) => {
 
     if (order.userId !== req.user.id && !req.user.isAdmin)
       return next(new HttpException("권한이 없습니다.", 403));
-
     next();
   } catch (err) {
     next(err);
@@ -60,7 +59,7 @@ export const checkUserByOrderIdOrAdmin = async (req, res, next) => {
 
 export const checkUserByUserId = async (req, res, next) => {
   const { userId } = req.params;
-  if (req.user.id === +userId) {
+  if (req.user.id === userId) {
     return next();
   }
   next(new HttpException("권한이 없습니다.", 403));

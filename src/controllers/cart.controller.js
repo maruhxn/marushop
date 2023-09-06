@@ -1,7 +1,10 @@
-import { prisma } from "../app.js";
+import prisma from "../configs/prisma-client.js";
 import HttpException from "../libs/http-exception.js";
 import { CartItemActionTypeValidator } from "../libs/validators/actionType.validator.js";
-import { CreateCartItemValidator } from "../libs/validators/cartItem.validator.js";
+import {
+  CreateCartItemValidator,
+  SelectCartItemValidator,
+} from "../libs/validators/cartItem.validator.js";
 
 export const getAllCartItems = async (req, res) => {
   const cartItems = await prisma.cartItem.findMany({
@@ -29,15 +32,6 @@ export const addProductToCart = async (req, res) => {
   const { productId } = req.params;
   const { quantity } = CreateCartItemValidator.parse(req.body);
 
-  const exProduct = await prisma.product.findUnique({
-    where: {
-      id: productId,
-    },
-  });
-
-  if (!exProduct)
-    throw new HttpException("요청하신 상품 정보가 없습니다.", 404);
-
   // 있다면 해당 장바구니에 이미 cartItem이 있는지 확인
   const exCartItem = await prisma.cartItem.findFirst({
     where: {
@@ -55,6 +49,7 @@ export const addProductToCart = async (req, res) => {
         quantity,
       },
     });
+    res.status(201).end();
   } else {
     // cartItem이 있다면, 수량 수정
     await prisma.cartItem.update({
@@ -65,26 +60,15 @@ export const addProductToCart = async (req, res) => {
         quantity: exCartItem.quantity + quantity,
       },
     });
-  }
 
-  res.status(201).end();
+    res.status(204).end();
+  }
 };
 
 export const updateCartItem = async (req, res) => {
   const { actionType } = CartItemActionTypeValidator.parse(req.query);
   const { productId } = req.params;
 
-  const exCartItem = await prisma.cartItem.findUnique({
-    where: {
-      userId_productId: {
-        productId,
-        userId: req.user.id,
-      },
-    },
-  });
-
-  if (!exCartItem)
-    throw new HttpException("장바구니 상품 정보가 없습니다.", 404);
   // quantity 0보다 작아지지 않게
   await prisma.cartItem.update({
     where: {
@@ -106,18 +90,6 @@ export const updateCartItem = async (req, res) => {
 export const deleteCartItem = async (req, res) => {
   const { productId } = req.params;
 
-  const exCartItem = await prisma.cartItem.findUnique({
-    where: {
-      userId_productId: {
-        productId,
-        userId: req.user.id,
-      },
-    },
-  });
-
-  if (!exCartItem)
-    throw new HttpException("장바구니 상품 정보가 없습니다.", 404);
-
   await prisma.cartItem.delete({
     where: {
       userId_productId: {
@@ -130,7 +102,7 @@ export const deleteCartItem = async (req, res) => {
 };
 
 export const addSelectedItemsToSession = async (req, res) => {
-  const { selectedCartItemIds } = req.body;
+  const { selectedCartItemIds } = SelectCartItemValidator.parse(req.body);
   const selectedCartItems = await prisma.cartItem.findMany({
     where: {
       userId: req.user.id,
