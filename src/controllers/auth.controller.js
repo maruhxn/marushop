@@ -1,8 +1,7 @@
 import bcrypt from "bcrypt";
 import passport from "passport";
-
-import { prisma } from "../app.js";
 import CONFIGS from "../configs/contant.js";
+import prisma from "../configs/prisma-client.js";
 import {
   checkEmailVerified,
   sendEmail,
@@ -24,16 +23,14 @@ export const auth = async (req, res) => {
   });
 };
 
-export const login = async (req, res, next) => {
+export const login = (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
-    if (err) return next(err);
+    if (err) throw new HttpException("로그인 인증 중 에러 발생", 500);
 
     if (!user) throw new HttpException(info, 401);
 
     req.logIn(user, (err) => {
-      if (err) {
-        return next(err);
-      }
+      if (err) throw new HttpException("로그인 중 에러 발생", 500);
       return res.status(200).json({
         ok: true,
         msg: "로그인 성공",
@@ -42,11 +39,9 @@ export const login = async (req, res, next) => {
   })(req, res, next);
 };
 
-export const logout = (req, res) => {
+export const logout = (req, res, next) => {
   req.logOut((err) => {
-    if (err) {
-      return next(err);
-    }
+    if (err) throw new HttpException("로그아웃 중 에러 발생", 500);
     return res.status(204).json({
       ok: true,
       msg: "로그아웃 성공",
@@ -54,10 +49,11 @@ export const logout = (req, res) => {
   });
 };
 
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   const { email, password, username } = CreateUserValidator.parse(req.body);
   const salt = await bcrypt.genSalt(CONFIGS.SALT_ROUNDS);
   let user;
+
   user = await prisma.user.findUnique({
     where: {
       email,
@@ -65,7 +61,7 @@ export const register = async (req, res) => {
   });
 
   if (user && user.password)
-    throw new HttpException("이미 존재하는 유저입니다.", 400);
+    throw new HttpException("이미 존재하는 유저입니다.", 409);
 
   if (user && !user.password) {
     await prisma.user.update({
@@ -90,18 +86,16 @@ export const register = async (req, res) => {
     });
   }
 
-  req.logIn(user, async (err) => {
-    if (err) {
-      return next(err);
-    }
+  await sendVerificationEmail(email);
 
-    await sendVerificationEmail(email);
+  req.logIn(user, (err) => {
+    if (err) throw new HttpException("로그인 중 에러 발생", 500);
 
     res.status(201).end();
   });
 };
 
-export const verifyEmail = async (req, res) => {
+export const verifyEmail = async (req, res, next) => {
   const isVerified = await checkEmailVerified(req.user.email);
 
   if (!isVerified) throw new HttpException("이메일 인증을 수행해주세요.", 403);

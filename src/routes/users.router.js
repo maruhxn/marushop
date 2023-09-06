@@ -3,7 +3,7 @@ import {
   deleteUserById,
   getAllUsers,
   getUserDetail,
-  updateUser,
+  updateUserById,
 } from "../controllers/users.controller.js";
 import catchAsync from "../libs/catch-async.js";
 import {
@@ -20,7 +20,12 @@ usersRouter.get("/", isLoggedIn, isAdmin, catchAsync(getAllUsers));
 usersRouter
   .route("/:userId")
   .get(isLoggedIn, isEmailVerified, catchAsync(getUserDetail))
-  .patch(isLoggedIn, isEmailVerified, checkUserByUserId, catchAsync(updateUser))
+  .patch(
+    isLoggedIn,
+    isEmailVerified,
+    checkUserByUserId,
+    catchAsync(updateUserById)
+  )
   .delete(isLoggedIn, isAdmin, catchAsync(deleteUserById));
 
 export default usersRouter;

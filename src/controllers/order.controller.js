@@ -1,5 +1,5 @@
-import { prisma } from "../app.js";
 import CONFIGS from "../configs/contant.js";
+import prisma from "../configs/prisma-client.js";
 import HttpException from "../libs/http-exception.js";
 import { OrderQueryValidator } from "../libs/validators/order-query.validator.js";
 
@@ -110,6 +110,7 @@ export const getOrderDetail = async (req, res) => {
     },
   });
 
+  if (!order) throw new HttpException("주문 정보가 없습니다.", 404);
   return res.status(200).json({
     ok: true,
     msg: `주문번호 - ${order.id} 조회 성공`,
@@ -123,22 +124,6 @@ export const deleteOrder = async (req, res) => {
   await prisma.order.delete({
     where: {
       id: orderId,
-    },
-  });
-
-  return res.status(204).end();
-};
-
-// 결제정보 사후 요청
-export const paymentSuccess = async (req, res) => {
-  const { orderId } = req.params;
-
-  await prisma.order.update({
-    where: {
-      id: orderId,
-    },
-    data: {
-      isPaid: true,
     },
   });
 

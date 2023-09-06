@@ -1,5 +1,5 @@
 import passport from "passport";
-import { prisma } from "../app.js";
+import prisma from "../configs/prisma-client.js";
 import googleStrategyConfig from "./google-strategy.js";
 import kakaoStrategyConfig from "./kakao-strategy.js";
 import localStrategyConfig from "./local-strategy.js";

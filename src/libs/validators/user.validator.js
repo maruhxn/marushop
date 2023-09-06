@@ -21,7 +21,7 @@ export const UpdateUserValidator = z.object({
   password: z
     .string()
     .min(6, { message: "비밀번호는 최소 6글자 이상이어야 합니다." }),
-  updatePassword: z
+  newPassword: z
     .string()
     .min(6, { message: "비밀번호는 최소 6글자 이상이어야 합니다." })
     .optional(),

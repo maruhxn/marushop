@@ -1,5 +1,5 @@
 import { Strategy as KakaoStrategy } from "passport-kakao";
-import { prisma } from "../app.js";
+import prisma from "../configs/prisma-client.js";
 import { sendVerificationEmail } from "../libs/email-service.js";
 
 const kakaoStrategyConfig = new KakaoStrategy(

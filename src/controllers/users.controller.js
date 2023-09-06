@@ -1,10 +1,9 @@
-import { prisma } from "../app.js";
+import bcrypt from "bcrypt";
 import CONFIGS from "../configs/contant.js";
+import prisma from "../configs/prisma-client.js";
 import HttpException from "../libs/http-exception.js";
 import { UpdateUserValidator } from "../libs/validators/user.validator.js";
 import { UsersQueryValidator } from "../libs/validators/users-query.validator.js";
-
-import bcrypt from "bcrypt";
 
 export const getAllUsers = async (req, res) => {
   const { page = 1 } = UsersQueryValidator.parse(req.query);
@@ -69,15 +68,14 @@ export const deleteUserById = async (req, res) => {
   return res.status(204).end();
 };
 
-export const updateUser = async (req, res) => {
+export const updateUserById = async (req, res) => {
   const { userId } = req.params;
   const updateUserDto = UpdateUserValidator.parse(req.body);
+
   let salt;
+  let hashedNewPassword;
 
-  if (Object.keys(updateUserDto).length <= 0)
-    throw new HttpException("수정 데이터를 1개 이상 입력해주세요", 400);
-
-  const { username, password, updatePassword } = updateUserDto;
+  const { username, password, newPassword } = updateUserDto;
 
   const exUser = await prisma.user.findUnique({
     where: {
@@ -88,10 +86,15 @@ export const updateUser = async (req, res) => {
     },
   });
 
-  if (bcrypt.compare(password, exUser.password))
+  if (!exUser) throw new HttpException("유저 정보가 없습니다.", 404);
+
+  if (!bcrypt.compare(password, exUser.password))
     throw new HttpException("비밀번호가 일치하지 않습니다.", 403);
 
-  if (updatePassword) salt = await bcrypt.genSalt(CONFIGS.SALT_ROUNDS);
+  if (newPassword) {
+    salt = await bcrypt.genSalt(CONFIGS.SALT_ROUNDS);
+    hashedNewPassword = await bcrypt.hash(newPassword, salt);
+  }
 
   await prisma.user.update({
     where: {
@@ -99,7 +102,7 @@ export const updateUser = async (req, res) => {
     },
     data: {
       username,
-      password: updatePassword && (await bcrypt.hash(updatePassword, salt)),
+      password: hashedNewPassword,
     },
   });
 

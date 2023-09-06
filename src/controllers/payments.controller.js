@@ -1,9 +1,11 @@
 import axios from "axios";
-import { prisma } from "../app.js";
+import prisma from "../configs/prisma-client.js";
 import { sendEmail } from "../libs/email-service.js";
 import HttpException from "../libs/http-exception.js";
 import {
+  CancelPaymentValidator,
   CompletePaymentsValidator,
+  ForceCancelPaymentValidator,
   PreparePaymentsValidator,
 } from "../libs/validators/payments.validator.js";
 
@@ -22,6 +24,26 @@ export const paymentsPrepare = async (req, res) => {
 
   if (hasOutOfStockProduct) throw new HttpException("재고가 부족합니다.", 409);
 
+  const getToken = await axios.post("https://api.iamport.kr/users/getToken", {
+    imp_key: process.env.IMP_API_KEY, // REST API키
+    imp_secret: process.env.IMP_API_SECRET, // REST API Secret
+  });
+
+  const { access_token } = getToken.data.response;
+
+  const { data } = await axios.post(
+    "https://api.iamport.kr/payments/prepare",
+    { amount, merchant_uid },
+    {
+      headers: { Authorization: access_token }, // 인증 토큰 Authorization header에 추가
+    }
+  );
+
+  if (data.code !== 0)
+    throw new HttpException(
+      `결제 정보 사전 등록 중 에러 - ${data.message}`,
+      400
+    );
   // order 및 orderItem 만들기
   await prisma.order.create({
     data: {
@@ -43,24 +65,7 @@ export const paymentsPrepare = async (req, res) => {
     },
   });
 
-  const getToken = await axios.post("https://api.iamport.kr/users/getToken", {
-    imp_key: process.env.IMP_API_KEY, // REST API키
-    imp_secret: process.env.IMP_API_SECRET, // REST API Secret
-  });
-
-  const { access_token } = getToken.data.response;
-
-  const { data } = await axios.post(
-    "https://api.iamport.kr/payments/prepare",
-    { amount, merchant_uid },
-    {
-      headers: { Authorization: access_token }, // 인증 토큰 Authorization header에 추가
-    }
-  );
-
-  if (data.code !== 0) throw new HttpException(data.message, 400);
-
-  return res.status(200).json(data);
+  return res.status(201).json(data);
 };
 
 /* TODO: webhook 연동 */
@@ -109,7 +114,8 @@ export const paymentsComplete = async (req, res) => {
   //  await Orders.findByIdAndUpdate(merchant_uid, { $set: paymentData }); // DB에 결제 정보 저장
   switch (status) {
     case "ready": // 가상계좌 발급
-      const { vbank_num, vbank_date, vbank_name } = paymentData;
+      throw new HttpException("준비 중입니다.", 501);
+      // const { vbank_num, vbank_date, vbank_name } = paymentData;
       // DB에 가상계좌 발급 정보 저장
       // await Users.findByIdAndUpdate("/* 고객 id */", {
       //   $set: { vbank_num, vbank_date, vbank_name },
@@ -192,11 +198,12 @@ export const paymentsComplete = async (req, res) => {
 
 // 강제 전액 환불
 export const paymentsCancelForce = async (req, res) => {
-  const { imp_uid, reason, cancel_request_amount } = req.body;
+  const { imp_uid, reason, cancel_request_amount } =
+    ForceCancelPaymentValidator.parse(req.body);
 
   const getToken = await axios.post("https://api.iamport.kr/users/getToken", {
-    imp_key: process.env.IMP_API_KEY, // REST API키
-    imp_secret: process.env.IMP_API_SECRET, // REST API Secret
+    imp_key: process.env.IMP_API_KEY || "TEST_KEY", // REST API키
+    imp_secret: process.env.IMP_API_SECRET || "TEST_SECRET", // REST API Secret
   });
   const { access_token } = getToken.data.response;
 
@@ -206,7 +213,7 @@ export const paymentsCancelForce = async (req, res) => {
       reason, // 가맹점 클라이언트로부터 받은 환불사유
       imp_uid, // imp_uid를 환불 `unique key`로 입력
       amount: cancel_request_amount, // 가맹점 클라이언트로부터 받은 환불금액
-      checksum: cancel_request_amount, // [권장] 환불 가능 금액 입력
+      checksum: 0, // [권장] 환불 가능 금액 입력
     },
     {
       headers: { Authorization: access_token }, // 인증 토큰 Authorization header에 추가
@@ -217,12 +224,14 @@ export const paymentsCancelForce = async (req, res) => {
 };
 
 // 환불
+// TODO: 물건 stock 복원
 export const paymentsCancel = async (req, res) => {
-  const { merchant_uid, reason, cancel_request_amount } = req.body;
+  const { merchant_uid, reason, cancel_request_amount } =
+    CancelPaymentValidator.parse(req.body);
 
   const getToken = await axios.post("https://api.iamport.kr/users/getToken", {
-    imp_key: process.env.IMP_API_KEY, // REST API키
-    imp_secret: process.env.IMP_API_SECRET, // REST API Secret
+    imp_key: process.env.IMP_API_KEY || "TEST_KEY", // REST API키
+    imp_secret: process.env.IMP_API_SECRET || "TEST_SECRET", // REST API Secret
   });
   const { access_token } = getToken.data.response;
 
@@ -235,8 +244,7 @@ export const paymentsCancel = async (req, res) => {
   const { id, amount, cancel_amount } = paymentData;
 
   const cancelableAmount = amount - cancel_amount;
-  if (cancelableAmount < 0)
-    throw new HttpException("이미 전액환불된 주문입니다.", 409);
+  if (cancelableAmount < 0) throw new HttpException("환불이 불가합니다.", 409);
 
   /* 포트원 REST API로 결제환불 요청 */
   const getCancelData = await axios.post(
@@ -254,20 +262,16 @@ export const paymentsCancel = async (req, res) => {
 
   const { response } = getCancelData.data;
 
-  const updatedPaymentData = await prisma.payment.update({
+  await prisma.payment.update({
     where: {
       orderId: response.merchant_uid,
     },
     data: {
       cancel_amount: {
-        increment: +cancel_request_amount,
+        increment: cancel_request_amount,
       },
     },
   });
 
-  res.status(200).json({
-    ok: true,
-    msg: "환불 결과 반환",
-    data: updatedPaymentData,
-  });
+  res.status(204).end();
 };

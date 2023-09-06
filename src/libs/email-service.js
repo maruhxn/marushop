@@ -25,7 +25,6 @@ export const sendVerificationEmail = async (email) => {
     };
     const verifyCommand = new VerifyEmailIdentityCommand(verifyParams);
     await sesClient.send(verifyCommand);
-    console.log(`Verification email sent to ${email}.`);
   } catch (error) {
     console.error(error);
     throw new HttpException("이메일을 수신 중 에러가 발생했습니다.", 500);
@@ -74,6 +73,6 @@ export const sendEmail = async (type, toAddress) => {
     return await sesClient.send(sendEmailCommand);
   } catch (error) {
     console.error(error);
-    throw new HttpException("이메일을 수신 중 에러가 발생했습니다.", 500);
+    throw new HttpException("이메일 발신 중 에러가 발생했습니다.", 500);
   }
 };
